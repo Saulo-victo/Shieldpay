@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -9,7 +10,17 @@ from src.infrastructure.database import engine, Base
 from src.infrastructure.database import SessionLocal
 from datetime import datetime, timezone
 from decimal import Decimal
+from dotenv import load_dotenv
+from src.infrastructure.services.notification_service import WebhookNotificationService
+from src.infrastructure.services.authorizer_service import ExternalAuthorizerService
 
+load_dotenv()
+
+NOTIFICATION_URL = os.getenv('NOTIFICATION_URL')
+notification_service = WebhookNotificationService(NOTIFICATION_URL)
+
+AUTHORIZER_URL = os.getenv('AUTHORIZER_URL')
+authorizer_service = ExternalAuthorizerService(AUTHORIZER_URL)
 
 Base.metadata.create_all(bind=engine)
 
@@ -87,7 +98,8 @@ def user_exeption_handler(request, exc):
 
 
 def get_transfer_money_use_case():
-    transfer = TransferMoney(memory_unit_of_work)
+    transfer = TransferMoney(
+        memory_unit_of_work, notification_service, authorizer_service)
     return transfer
 
 
