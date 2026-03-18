@@ -13,6 +13,7 @@ from decimal import Decimal
 from dotenv import load_dotenv
 from src.infrastructure.services.notification_service import WebhookNotificationService
 from src.infrastructure.services.authorizer_service import ExternalAuthorizerService
+from sqlalchemy.exc import IntegrityError
 
 load_dotenv()
 
@@ -70,16 +71,16 @@ def get_register_use_case():
 
 @app.post("/customers/", response_model=CustomerResponse, status_code=HTTPStatus.CREATED)
 def register_customer(request: CustomerRequest, use_case=Depends(get_register_use_case)):
-    # try:
-    customer = use_case.execute(**request.model_dump())
-    return {
-        "id": str(customer.id),
-        "name": customer.name,
-        "email": str(customer.email.value),
-        "cpf": str(customer.cpf.value)
-    }
-    # except:
-    #     raise InvalidCreateUser('O cliente já existe') - CORRIGIR URGENTE, A APLICAÇÃO ESTÁ QUEBRADA
+    try:
+        customer = use_case.execute(**request.model_dump())
+        return {
+            "id": str(customer.id),
+            "name": customer.name,
+            "email": str(customer.email.value),
+            "cpf": str(customer.cpf.value)
+        }
+    except IntegrityError:
+        raise InvalidCreateUser('O cliente já existe')
 
 
 @app.exception_handler(InvalidCpfException)
